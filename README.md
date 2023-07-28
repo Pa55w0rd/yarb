@@ -15,7 +15,7 @@
 ## 安装
 
 ```sh
-$ git clone https://github.com/firmianay/yarb.git
+$ git clone https://github.com/VulnTotal-Team/yarb.git
 $ cd yarb && ./install.sh
 ```
 
@@ -48,10 +48,12 @@ $ nohup ./yarb.py --cron 11:00 > run.log 2>&1 &
 
 目前支持的推送机器人及对应的 secrets：
 
-- [邮件机器人](https://service.mail.qq.com/cgi-bin/help?subtype=1&&id=28&&no=1001256)：`MAIL_KEY`（需要申请授权码）（订阅较多时推荐）
+- [邮件机器人](https://service.mail.qq.com/cgi-bin/help?subtype=1&&id=28&&no=1001256)
+  - `MAIL_KEY`（需要申请授权码，订阅较多时推荐）
+  - `MAIL_RECEIVER`（可选，接收人，以“,”分隔）
 - [飞书群机器人](https://open.feishu.cn/document/ukTMukTMukTM/ucTM5YjL3ETO24yNxkjN)：`FEISHU_KEY`
 - [企业微信群机器人](https://developer.work.weixin.qq.com/document/path/91770)：`WECOM_KEY`
-- [钉钉群机器人](https://open.dingtalk.com/document/robots/custom-robot-access)：`DINGTALK_KEY`
+- [钉钉群机器人](https://open.dingtalk.com/document/robots/custom-robot-access)：`DINGTALK_KEY`（机器人安全设置可以使用“自定义关键词”，设置为“Yarb”）
 - [QQ群机器人](https://github.com/Mrs4s/go-cqhttp)：`QQ_KEY`（需要关闭登录设备锁）
 - [Telegram机器人](https://core.telegram.org/bots/api): `TELEGRAM_KEY`（需要代理）
 
@@ -66,7 +68,6 @@ $ nohup ./yarb.py --cron 11:00 > run.log 2>&1 &
 - [CyberSecurityRSS](https://github.com/zer0yu/CyberSecurityRSS)
 - [Chinese-Security-RSS](https://github.com/zhengjim/Chinese-Security-RSS)
 - [awesome-security-feed](https://github.com/mrtouch93/awesome-security-feed)
-- [SecurityRSS](https://github.com/Han0nly/SecurityRSS)
 - [安全技术公众号](https://github.com/ttttmr/wechat2rss)
 - [SecWiki 安全聚合](https://www.sec-wiki.com/opml/index)
 - [Hacking8 安全信息流](https://i.hacking8.com/)
@@ -107,7 +108,7 @@ $ nohup ./yarb.py --cron 11:00 > run.log 2>&1 &
 
 ## 关注我们
 
-[VulnTotal安全团队](https://github.com/VulnTotal-Team)成立于2022年。致力于分享高质量原创文章和开源工具，包括Web安全、移动安全、物联网/汽车安全、代码审计、网络攻防等，欢迎[关注或加入我们](https://github.com/VulnTotal-Team/.github/blob/main/README.md)！
+[VulnTotal安全](https://github.com/VulnTotal-Team)致力于分享高质量原创文章和开源工具，包括物联网/汽车安全、移动安全、网络攻防等。
 
 GNU General Public License v3.0
 

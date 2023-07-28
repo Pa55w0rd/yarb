@@ -13,7 +13,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from bot import *
-from utils import Color, Pattern
+from utils import *
 
 import requests
 requests.packages.urllib3.disable_warnings()
@@ -70,8 +70,15 @@ def update_rss(rss: dict, proxy_url=''):
     return result
 
 
-def parseThread(url: str, proxy_url=''):
+def parseThread(conf: dict, url: str, proxy_url=''):
     """获取文章线程"""
+    def filter(title: str):
+        """过滤文章"""
+        for i in conf['exclude']:
+            if i in title:
+                return False
+        return True
+
     proxy = {'http': proxy_url, 'https': proxy_url} if proxy_url else {'http': None, 'https': None}
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36',
@@ -86,18 +93,16 @@ def parseThread(url: str, proxy_url=''):
         r = feedparser.parse(r.content)
         title = r.feed.title
         for entry in r.entries:
-            d = entry.get('published_parsed')
-            if not d:
-                d = entry.updated_parsed
+            d = entry.get('published_parsed') or entry.get('updated_parsed')
             yesterday = datetime.date.today() + datetime.timedelta(-1)
             pubday = datetime.date(d[0], d[1], d[2])
-            if pubday == yesterday:
+            if pubday == yesterday and filter(entry.title):
                 item = {entry.title: entry.link}
                 print(item)
-                result.update(item)
-        Color.print_success(f'[+] {title}\t{url}\t{len(result.values())}/{len(r.entries)}')
+                result |= item
+        console.print(f'[+] {title}\t{url}\t{len(result.values())}/{len(r.entries)}', style='bold green')
     except Exception as e:
-        Color.print_failed(f'[-] failed: {url}')
+        console.print(f'[-] failed: {url}', style='bold red')
         print(e)
     return title, result
 
@@ -107,11 +112,13 @@ def init_bot(conf: dict, proxy_url=''):
     bots = []
     for name, v in conf.items():
         if v['enabled']:
-            key = os.getenv(v['secrets'])
-            if not key:
-                key = v['key']
+            key = os.getenv(v['secrets']) or v['key']
 
-            if name == 'qq':
+            if name == 'mail':
+                receiver = os.getenv(v['secrets_receiver']) or v['receiver']
+                bot = globals()[f'{name}Bot'](v['address'], key, receiver, v['from'], v['server'])
+                bots.append(bot)
+            elif name == 'qq':
                 bot = globals()[f'{name}Bot'](v['group_id'])
                 if bot.start_server(v['qq_id'], key):
                     bots.append(bot)
@@ -119,9 +126,6 @@ def init_bot(conf: dict, proxy_url=''):
                 bot = globals()[f'{name}Bot'](key, v['chat_id'], proxy_url)
                 if bot.test_connect():
                     bots.append(bot)
-            elif name == 'mail':
-                bot = globals()[f'{name}Bot'](v['address'], key, v['receiver'], v['server'])
-                bots.append(bot)
             else:
                 bot = globals()[f'{name}Bot'](key, proxy_url)
                 bots.append(bot)
@@ -153,10 +157,10 @@ def init_rss(conf: dict, update: bool=False, proxy_url=''):
                 if not check:
                     feeds.append(url)
         except Exception as e:
-            Color.print_failed(f'[-] 解析失败：{value}')
+            console.print(f'[-] 解析失败：{value}', style='bold red')
             print(e)
 
-    Color.print_focus(f'[+] {len(feeds)} feeds')
+    console.print(f'[+] {len(feeds)} feeds', style='bold yellow')
     return feeds
 
 
@@ -178,9 +182,6 @@ def job(args):
     with open(config_path) as f:
         conf = json.load(f)
 
-    proxy_bot = conf['proxy']['url'] if conf['proxy']['bot'] else ''
-    bots = init_bot(conf['bot'], proxy_bot)
-
     proxy_rss = conf['proxy']['url'] if conf['proxy']['rss'] else ''
     feeds = init_rss(conf['rss'], args.update, proxy_rss)
 
@@ -193,23 +194,25 @@ def job(args):
         numb = 0
         tasks = []
         with ThreadPoolExecutor(100) as executor:
-            tasks.extend(executor.submit(parseThread, url, proxy_rss) for url in feeds)
+            tasks.extend(executor.submit(parseThread, conf['keywords'], url, proxy_rss) for url in feeds)
             for task in as_completed(tasks):
                 title, result = task.result()            
                 if result:
                     numb += len(result.values())
                     results.append({title: result})
-        Color.print_focus(f'[+] {len(results)} feeds, {numb} articles')
+        console.print(f'[+] {len(results)} feeds, {numb} articles', style='bold yellow')
 
         # temp_path = root_path.joinpath('temp_data.json')
         # with open(temp_path, 'w+') as f:
         #     f.write(json.dumps(results, indent=4, ensure_ascii=False))
-        #     Color.print_focus(f'[+] temp data: {temp_path}')
+        #     console.print(f'[+] temp data: {temp_path}', style='bold yellow')
 
         # 更新today
         update_today(results)
 
     # 推送文章
+    proxy_bot = conf['proxy']['url'] if conf['proxy']['bot'] else ''
+    bots = init_bot(conf['bot'], proxy_bot)
     for bot in bots:
         bot.send(bot.parse_results(results))
 
